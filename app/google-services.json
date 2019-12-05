@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1064585966172",
+    "firebase_url": "https://twocontextual.firebaseio.com",
+    "project_id": "twocontextual",
+    "storage_bucket": "twocontextual.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1064585966172:android:3c06c94e2d9ae6c44c2c99",
+        "android_client_info": {
+          "package_name": "com.wydgettech.contextualwalls"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1064585966172-8a1sr10djfli9626028bhta056hmr6em.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wydgettech.contextualwalls",
+            "certificate_hash": "be67dd9c3663de0ba98c5f89a39282bc5aaf6130"
+          }
+        },
+        {
+          "client_id": "1064585966172-m3qagsuhcmd97lheo57fb25gm9019gt0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNXONOYdHSK10lb7C0RKN3XtlLd4QPMQ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1064585966172-m3qagsuhcmd97lheo57fb25gm9019gt0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
