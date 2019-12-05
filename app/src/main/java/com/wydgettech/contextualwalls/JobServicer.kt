@@ -128,6 +128,7 @@ class JobServicer : JobService() {
                 })
             }
             .addOnFailureListener {
+                Utility.scheduleWalls(context, true)
                 Toast.makeText(context, "Failed location gps", Toast.LENGTH_SHORT).show()
             }
 
