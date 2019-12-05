@@ -31,48 +31,43 @@ class GIFWallpaper : WallpaperService() {
             engine = WallPaperEngine()
             return engine
         } catch (e: IOException) {
-            Log.w(TAG, "Error creating WallPaperEngine", e)
+            Log.w("Walls", "Error creating Engine", e)
             stopSelf()
             return null
         }
     }
 
-
-
     internal inner class WallPaperEngine @Throws(IOException::class)
     constructor() : Engine() {
 
-        private var liveMovie: Movie? = null
+        private var gifMovie: Movie? = null
         private var duration: Int = 0
         private var runnable: Runnable
-        var mScaleX: Float = 0.toFloat()
-        var mScaleY: Float = 0.toFloat()
+        var gifScaleX: Float = 0.toFloat()
+        var gifScaleY: Float = 0.toFloat()
         var width: Int = 0
         var height: Int = 0
-        var mWhen: Int = 0
-        var mStart: Long = 0
+        var timeInMovie: Int = 0
+        var gifStart: Long = 0
         var canvas: Canvas? = null
         var statics: Boolean = false
         var link: String = ""
         var weather: String = "sunny"
+        var receiver: BroadcastReceiver
+        var filter: IntentFilter
 
         init {
-            Log.d("htt", "walls resetes")
-            initStuff(resources.openRawResource(R.raw.rainy))
+            initStuff(resources.openRawResource(R.raw.default1))
             runnable = Runnable { runWall() }
-            val filter = IntentFilter("com.wydgettech.contextualwalls.CHANGEWALLPAPER")
-            var receiver = object : BroadcastReceiver() {
+            filter = IntentFilter("com.wydgettech.contextualwalls.CHANGEWALLPAPER")
+            receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
-                    if (intent.hasExtra("link")){
-                        //convert to bitmap
+                    if (intent.hasExtra("link")) {
                         link = intent.getStringExtra("link")
                         statics = true
                         Log.d("link", link)
-
                     }
-
-                    if (intent.hasExtra("weather")){
-                        //convert to bitmap
+                    if (intent.hasExtra("weather")) {
                         weather = intent.getStringExtra("weather")
                         val id = context.resources.getIdentifier(
                             weather,
@@ -83,45 +78,46 @@ class GIFWallpaper : WallpaperService() {
                         statics = false
 
                     }
-                   // initStuff(resources.openRawResource(R.raw.sunny))
                 }
             }
             registerReceiver(receiver, filter)
         }
 
-
         fun initStuff(input: InputStream) {
-            val `is`  = input
+            val `is` = input
 
             if (`is` != null) {
 
                 try {
-                    liveMovie = Movie.decodeStream(`is`)
-                    mScaleX = width / (1f * liveMovie!!.width())
-                    mScaleY = height / (1f * liveMovie!!.height())
-                    duration = liveMovie!!.duration()
+                    gifMovie = Movie.decodeStream(`is`)
+                    gifScaleX = width / (1f * gifMovie!!.width())
+                    gifScaleY = height / (1f * gifMovie!!.height())
+                    duration = gifMovie!!.duration()
 
                 } finally {
                     `is`.close()
                 }
             } else {
-                throw IOException("Unable to open R.raw.hand")
+                throw IOException("Unable to open the gif wallpaper")
             }
-            mWhen = -1
+            timeInMovie = -1
         }
 
         override fun onDestroy() {
             super.onDestroy()
             liveHandler.removeCallbacks(runnable)
+            unregisterReceiver(receiver)
         }
 
-        private var gestureDetector = GestureDetector(applicationContext, object: GestureDetector.SimpleOnGestureListener() {
-            override fun onDoubleTap(e: MotionEvent?): Boolean {
-                Toast.makeText(applicationContext, "Loading new walls", Toast.LENGTH_SHORT).show()
-                Log.d("walls", link)
-                return super.onDoubleTap(e)
-            }
-        })
+        private var gestureDetector =
+            GestureDetector(applicationContext, object : GestureDetector.SimpleOnGestureListener() {
+                override fun onDoubleTap(e: MotionEvent?): Boolean {
+                    Toast.makeText(applicationContext, "Loading new walls", Toast.LENGTH_SHORT)
+                        .show()
+                    Log.d("walls", link)
+                    return super.onDoubleTap(e)
+                }
+            })
 
         override fun onTouchEvent(event: MotionEvent?) {
             Log.d("touch", "touchevent")
@@ -133,8 +129,7 @@ class GIFWallpaper : WallpaperService() {
             super.onVisibilityChanged(visible)
             if (visible) {
                 runWall()
-            }
-            else {
+            } else {
                 liveHandler.removeCallbacks(runnable)
             }
         }
@@ -146,11 +141,10 @@ class GIFWallpaper : WallpaperService() {
             super.onSurfaceChanged(holder, format, width, height)
             this.width = width
             this.height = height
-            mScaleX = width / (1f * liveMovie!!.width())
-            mScaleY = height / (1f * liveMovie!!.height())
+            gifScaleX = width / (1f * gifMovie!!.width())
+            gifScaleY = height / (1f * gifMovie!!.height())
             runWall()
         }
-
 
         override fun onOffsetsChanged(
             xOffset: Float, yOffset: Float,
@@ -169,7 +163,7 @@ class GIFWallpaper : WallpaperService() {
             try {
                 canvas = surfaceHolder.lockCanvas()
                 if (canvas != null) {
-                    if(statics)
+                    if (statics)
                         drawStatic()
                     else
                         drawGif(canvas!!)
@@ -187,26 +181,24 @@ class GIFWallpaper : WallpaperService() {
         }
 
         fun tick() {
-            if (mWhen.toLong() == -1L) {
-                mWhen = 0
-                mStart = SystemClock.uptimeMillis()
+            if (timeInMovie.toLong() == -1L) {
+                timeInMovie = 0
+                gifStart = SystemClock.uptimeMillis()
             } else {
-                val mDiff = SystemClock.uptimeMillis() - mStart
-                mWhen = (mDiff % duration).toInt()
+                val sincePrev = SystemClock.uptimeMillis() - gifStart
+                timeInMovie = (sincePrev % duration).toInt()
             }
         }
 
         fun drawGif(canvas: Canvas) {
             canvas.save()
-            canvas.scale(mScaleX, mScaleY)
-            liveMovie!!.setTime(mWhen)
-            liveMovie!!.draw(canvas, 0f, 0f)
+            canvas.scale(gifScaleX, gifScaleY)
+            gifMovie!!.setTime(timeInMovie)
+            gifMovie!!.draw(canvas, 0f, 0f)
             canvas.restore()
         }
 
         fun drawStatic() {
-            //canvas!!.scale(mScaleX, mScaleY)
-            Log.d("trying to draw", "trying")
             Glide.with(applicationContext)
                 .asBitmap().load(link)
                 .listener(object : RequestListener<Bitmap> {
@@ -227,15 +219,15 @@ class GIFWallpaper : WallpaperService() {
                         dataSource: DataSource?,
                         isFirstResource: Boolean
                     ): Boolean {
-                        Log.d("succ", "succcc")
-//
-//                        val scaleX = width / (1f * resource!!.width)
-//                        val scaleY = height / (1f * resource!!.height)
-//                        canvas!!.scale(scaleX, scaleY)
-                        canvas!!.drawBitmap(resource!!, 0f, 0f, null)
+                        val bitmap = Bitmap.createScaledBitmap(
+                            resource!!,
+                            canvas!!.getWidth(),
+                            canvas!!.getHeight(),
+                            true
+                        );
+                        canvas!!.drawBitmap(bitmap, 0f, 0f, null)
                         return true
                     }
-
                 }
                 ).submit()
         }
@@ -244,7 +236,6 @@ class GIFWallpaper : WallpaperService() {
     }
 
     companion object {
-        internal val TAG = "LIVE_WALLPAPER"
         internal val liveHandler = Handler()
     }
 }

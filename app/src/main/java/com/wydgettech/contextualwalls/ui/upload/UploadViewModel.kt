@@ -24,14 +24,8 @@ import kotlin.coroutines.coroutineContext
 
 class UploadViewModel : ViewModel() {
 
-    private lateinit var db: FirebaseFirestore
+    private var db: FirebaseFirestore
     private var mStorageRef: StorageReference? = null
-
-    private val _text = MutableLiveData<String>().apply {
-        value = "This is notifications Fragment"
-    }
-    val text: LiveData<String> = _text
-
 
     init {
         db = FirebaseFirestore.getInstance()
@@ -39,7 +33,7 @@ class UploadViewModel : ViewModel() {
 
     }
 
-    fun uploadImage (context: Context, uri: Uri, uploadCallback: (Boolean) -> Unit) {
+    fun uploadImage(context: Context, uri: Uri, uploadCallback: (Boolean) -> Unit) {
         val ref = mStorageRef!!.child("images/" + uri.toString())
         val uploadTask = ref.putFile(uri)
 
@@ -62,12 +56,12 @@ class UploadViewModel : ViewModel() {
     }
 
 
-    fun uploadLink (context: Context, link: Uri, uploadCallback: (Boolean) -> Unit) {
+    fun uploadLink(context: Context, link: Uri, uploadCallback: (Boolean) -> Unit) {
         var fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
         fusedLocationClient.lastLocation
             .addOnSuccessListener { location: Location? ->
                 var city = Utility.gpsToCity(context, location!!.latitude, location!!.longitude)
-                var arr =  hashMapOf(
+                var arr = hashMapOf(
                     "link" to link.toString()
                 )
                 db.collection(city).document(link.toString().takeLast(20))
@@ -79,17 +73,14 @@ class UploadViewModel : ViewModel() {
                         )
                         uploadCallback(true)
                     })
-                    .addOnFailureListener(OnFailureListener {
-                            e -> Log.w("Walls", "Error adding document", e)
+                    .addOnFailureListener(OnFailureListener { e ->
+                        Log.w("Walls", "Error adding document", e)
                         uploadCallback(false)
                     })
             }
             .addOnFailureListener {
                 Toast.makeText(context, "Failed location gps", Toast.LENGTH_SHORT).show()
             }
-
-
-
 
 
     }

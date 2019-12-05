@@ -36,12 +36,6 @@ class Utility {
             jobScheduler.schedule(builder.build())
         }
 
-
-        fun getWeather(): String {
-            return "cloudy"
-        }
-
-
         fun gpsToCity(context: Context, latitude: Double, longitude: Double): String {
 
             val geocoder = Geocoder(context, Locale.ENGLISH)
@@ -50,12 +44,14 @@ class Utility {
             if (addresses.size > 0) {
                 val curr: Address = addresses[0]
                 if (curr.locality == null) {
+                    if(curr.countryName == null)
+                        return "Unknown"
                     return curr.countryName
                 }
                 return curr.locality
             }
             else
-                return "default"
+                return "Unknown"
         }
 
     }
