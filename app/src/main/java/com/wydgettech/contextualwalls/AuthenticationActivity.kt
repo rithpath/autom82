@@ -1,10 +1,14 @@
 package com.wydgettech.contextualwalls
 
+import android.Manifest
+import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import com.google.firebase.FirebaseException
 import com.google.firebase.FirebaseTooManyRequestsException
 import com.google.firebase.auth.FirebaseAuth
@@ -94,8 +98,7 @@ class AuthenticationActivity : AppCompatActivity() {
         FirebaseAuth.getInstance().signInWithCredential(credential)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    val intent = Intent(this, BaseActivity::class.java)
-                    startActivity(intent)
+                    checkPerms()
                 } else {
                     if (task.exception is FirebaseAuthInvalidCredentialsException) {
                         Toast.makeText(this, "The code entered was invalid", Toast.LENGTH_LONG)
@@ -104,4 +107,50 @@ class AuthenticationActivity : AppCompatActivity() {
                 }
             }
     }
+
+    private fun checkPerms () {
+        val permissionAccessCoarseLocationApproved = ActivityCompat
+            .checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+
+        if (permissionAccessCoarseLocationApproved) {
+            val backgroundLocationPermissionApproved = ActivityCompat
+                .checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) ==
+                    PackageManager.PERMISSION_GRANTED
+
+            if (backgroundLocationPermissionApproved) {
+                val intent = Intent(this, BaseActivity::class.java)
+                startActivity(intent)
+            } else {
+                // App can only access location in the foreground. Display a dialog
+                // warning the user that your app must have all-the-time access to
+                // location in order to function properly. Then, request background
+                // location.
+                ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+                    1)
+
+            }
+        } else {
+            // App doesn't have access to the device's location at all. Make full request
+            // for permission.
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_BACKGROUND_LOCATION), 2)
+
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if((requestCode == 2 || requestCode == 1)) {
+            val intent = Intent(this, BaseActivity::class.java)
+            startActivity(intent)
+        }
+    }
+
 }

@@ -90,6 +90,8 @@ class HomeFragment : Fragment() {
             startActivityForResult(intent, LIVE_WALLPAPER_LOCATION_CODE)
         }
 
+
+
         return root
     }
 
