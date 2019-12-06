@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import kotlinx.android.synthetic.main.fragment_home.*
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Build
@@ -51,7 +50,7 @@ class HomeFragment : Fragment() {
             })
         })
 
-        homeViewModel.getLocation(context!!)
+        homeViewModel.getWeatherAndLocation(context!!)
 
         weatherwall.setOnClickListener {
             val intent = Intent(
@@ -108,7 +107,7 @@ class HomeFragment : Fragment() {
     }
 
     override fun onResume() {
-        homeViewModel.getLocation(context!!)
+        homeViewModel.getWeatherAndLocation(context!!)
         super.onResume()
     }
 }

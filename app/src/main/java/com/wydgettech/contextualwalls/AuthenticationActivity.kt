@@ -22,7 +22,7 @@ class AuthenticationActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_authentication)
 
-        if(FirebaseAuth.getInstance().currentUser != null) {
+        if (FirebaseAuth.getInstance().currentUser != null) {
             val intent = Intent(this, BaseActivity::class.java)
             startActivity(intent)
         }
@@ -32,9 +32,10 @@ class AuthenticationActivity : AppCompatActivity() {
     }
 
 
-    private fun authenticateNumber (num: String) {
+    private fun authenticateNumber(num: String) {
 
-        Toast.makeText(this, "We are sending you a verification code to " + num, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "We are sending you a verification code to " + num, Toast.LENGTH_SHORT)
+            .show()
 
         var callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
 
@@ -44,9 +45,17 @@ class AuthenticationActivity : AppCompatActivity() {
 
             override fun onVerificationFailed(e: FirebaseException) {
                 if (e is FirebaseAuthInvalidCredentialsException) {
-                    Toast.makeText(applicationContext, "Phone number format is invalid.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        applicationContext,
+                        "Phone number format is invalid.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 } else if (e is FirebaseTooManyRequestsException) {
-                    Toast.makeText(applicationContext, "Sorry, you have made too many requests to firebase", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        applicationContext,
+                        "Sorry, you have made too many requests to firebase",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
 
             }
@@ -75,7 +84,8 @@ class AuthenticationActivity : AppCompatActivity() {
             60,
             TimeUnit.SECONDS,
             this,
-            callbacks)
+            callbacks
+        )
 
     }
 
@@ -88,7 +98,8 @@ class AuthenticationActivity : AppCompatActivity() {
                     startActivity(intent)
                 } else {
                     if (task.exception is FirebaseAuthInvalidCredentialsException) {
-                        Toast.makeText(this, "The code entered was invalid", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "The code entered was invalid", Toast.LENGTH_LONG)
+                            .show()
                     }
                 }
             }

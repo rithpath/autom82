@@ -1,5 +1,8 @@
 package com.wydgettech.contextualwalls
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.*
 import android.os.SystemClock
 import android.view.SurfaceHolder
 import android.graphics.Movie
@@ -10,10 +13,6 @@ import android.util.Log
 import android.widget.Toast
 import java.io.IOException
 import java.io.InputStream
-import android.content.Intent
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -21,6 +20,10 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
+import android.content.Intent
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 
 
 class GIFWallpaper : WallpaperService() {
@@ -55,32 +58,50 @@ class GIFWallpaper : WallpaperService() {
         var weather: String = "sunny"
         var receiver: BroadcastReceiver
         var filter: IntentFilter
+        var gifID: Int = R.raw.default1
+        var sharedPreferences: SharedPreferences
 
         init {
-            initStuff(resources.openRawResource(R.raw.default1))
+            sharedPreferences = applicationContext.getSharedPreferences("ContextualWalls", 0)
+            if (gifMovie == null) {
+                val weather = sharedPreferences.getString("weatherType", "sunny")!!
+                if (weather != null)
+                    openGIF(weather)
+                else
+                    openGIF("default1")
+            }
+            if (link == "")
+                link = sharedPreferences.getString("linkURL", "")!!
+
+            statics = sharedPreferences.getBoolean("static", false)
+
             runnable = Runnable { runWall() }
             filter = IntentFilter("com.wydgettech.contextualwalls.CHANGEWALLPAPER")
             receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
+                    statics = sharedPreferences.getBoolean("static", false)
                     if (intent.hasExtra("link")) {
                         link = intent.getStringExtra("link")
-                        statics = true
                         Log.d("link", link)
                     }
                     if (intent.hasExtra("weather")) {
                         weather = intent.getStringExtra("weather")
-                        val id = context.resources.getIdentifier(
-                            weather,
-                            "raw",
-                            context.packageName
-                        )
-                        initStuff(resources.openRawResource(id))
-                        statics = false
-
+                        openGIF(weather)
                     }
                 }
             }
             registerReceiver(receiver, filter)
+        }
+
+        private fun openGIF(weather: String) {
+            gifID = applicationContext.resources.getIdentifier(
+                weather,
+                "raw",
+                applicationContext.packageName
+            )
+
+            initStuff(resources.openRawResource(gifID))
+            statics = false
         }
 
         fun initStuff(input: InputStream) {
@@ -109,15 +130,44 @@ class GIFWallpaper : WallpaperService() {
             unregisterReceiver(receiver)
         }
 
+
         private var gestureDetector =
             GestureDetector(applicationContext, object : GestureDetector.SimpleOnGestureListener() {
                 override fun onDoubleTap(e: MotionEvent?): Boolean {
-                    Toast.makeText(applicationContext, "Loading new walls", Toast.LENGTH_SHORT)
-                        .show()
-                    Log.d("walls", link)
+                    if (sharedPreferences.getBoolean("quick", false) && sharedPreferences.getString(
+                            "package",
+                            ""
+                        ) != ""
+                    ) {
+                        Toast.makeText(
+                            applicationContext,
+                            "Opening Application",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        val launchIntent =
+                            packageManager.getLaunchIntentForPackage(
+                                sharedPreferences.getString(
+                                    "package",
+                                    ""
+                                )!!
+                            )
+                        startActivity(launchIntent)
+                    } else {
+                        Utility.getLocation(applicationContext) {
+                            if (it != null)
+                                Utility.getWeatherMessage(
+                                    it?.latitude.toString(),
+                                    it?.longitude.toString()
+                                ) {
+                                    if (it != null)
+                                        startNotification(it)
+                                }
+                        }
+                    }
                     return super.onDoubleTap(e)
                 }
             })
+
 
         override fun onTouchEvent(event: MotionEvent?) {
             Log.d("touch", "touchevent")
@@ -191,6 +241,7 @@ class GIFWallpaper : WallpaperService() {
         }
 
         fun drawGif(canvas: Canvas) {
+
             canvas.save()
             canvas.scale(gifScaleX, gifScaleY)
             gifMovie!!.setTime(timeInMovie)
@@ -199,6 +250,7 @@ class GIFWallpaper : WallpaperService() {
         }
 
         fun drawStatic() {
+
             Glide.with(applicationContext)
                 .asBitmap().load(link)
                 .listener(object : RequestListener<Bitmap> {
@@ -232,6 +284,36 @@ class GIFWallpaper : WallpaperService() {
                 ).submit()
         }
 
+        private fun startNotification(notifText: String) {
+            createNotificationChannel()
+            var builder = NotificationCompat.Builder(applicationContext, "WallsChannel")
+                .setSmallIcon(R.drawable.ic_notifications_black_24dp)
+                .setContentTitle("Weather Requested!")
+                .setStyle(
+                    NotificationCompat.BigTextStyle()
+                        .bigText(notifText)
+                )
+                .setContentText(notifText)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            with(NotificationManagerCompat.from(applicationContext)) {
+                // notificationId is a unique int for each notification that you must define
+                notify(1, builder.build())
+            }
+        }
+
+        private fun createNotificationChannel() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val name = "ContextualWalls"
+                val descriptionText = "Weather"
+                val importance = NotificationManager.IMPORTANCE_DEFAULT
+                val channel = NotificationChannel("WallsChannel", name, importance).apply {
+                    description = descriptionText
+                }
+                val notificationManager: NotificationManager =
+                    getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                notificationManager.createNotificationChannel(channel)
+            }
+        }
 
     }
 

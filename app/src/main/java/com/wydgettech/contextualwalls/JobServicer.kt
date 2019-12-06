@@ -23,16 +23,14 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class JobServicer : JobService() {
     private lateinit var db: FirebaseFirestore
-    var AppId = "7438dd0b5b52d389ece4f81862cc93ac"
-
+    lateinit var sharedPref: SharedPreferences
 
     override fun onStartJob(params: JobParameters): Boolean {
+        sharedPref = applicationContext.getSharedPreferences("ContextualWalls", 0)
         Log.d("Walls", "Started background")
-        val sharedPref: SharedPreferences =
-            applicationContext.getSharedPreferences("ContextualWalls", 0)
         var weather = sharedPref.getBoolean("weather", false)
         if (weather) {
-            getWeatherData(this, params)
+            setWeatherWallpaper(this, params)
         } else
             setWallpaper(params, applicationContext)
 
@@ -50,9 +48,13 @@ class JobServicer : JobService() {
                     var docs: DocumentSnapshot = it.documents[(0 until it.size()).random()]
                     var link = docs.get("link") as String
 
+                    sharedPref.edit().putString("linkURL", link).commit()
+                    sharedPref.edit().putBoolean("static", true).commit()
+
                     val intent = Intent("com.wydgettech.contextualwalls.CHANGEWALLPAPER")
                     intent.putExtra("link", link)
                     this.sendBroadcast(intent)
+
                     Toast.makeText(applicationContext, "Loading new wallpaper!", Toast.LENGTH_SHORT)
                         .show()
                     Utility.scheduleWalls(context, false)
@@ -71,67 +73,25 @@ class JobServicer : JobService() {
 
     }
 
-    fun setWeatherWallpaper(context: Context, input: String) {
-        val intent = Intent("com.wydgettech.contextualwalls.CHANGEWALLPAPER")
-        intent.putExtra("weather", input)
-        this.sendBroadcast(intent)
-    }
-
     override fun onStopJob(params: JobParameters): Boolean {
         return true
     }
 
-    fun getWeatherData(context: Context, params: JobParameters) {
-        var fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location: Location? ->
-                var latitude = location!!.latitude.toString()
-                var longitude = location!!.longitude.toString()
-                val retrofit = Retrofit.Builder()
-                    .baseUrl("https://api.openweathermap.org/")
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build()
-                val service = retrofit.create(WeatherApi::class.java)
-                val call = service.getCurrentWeatherData(latitude, longitude, AppId)
-                call.enqueue(object : Callback<WeatherResponse> {
-                    override fun onResponse(@NonNull call: Call<WeatherResponse>, @NonNull response: Response<WeatherResponse>) {
-                        if (response.code() === 200) {
-                            val weatherResponse = response.body()!!
-                            var rain = false
-                            weatherResponse.weather.forEach {
-                                if (it.id > 200 && it.id < 599) {
-                                    rain = true
-                                }
-                            }
-                            if (rain) {
-                                setWeatherWallpaper(context, "rainy")
-                            } else if (weatherResponse.clouds.all != null && weatherResponse.clouds.all.compareTo(
-                                    39
-                                ) > 0
-                            ) {
-                                setWeatherWallpaper(context, "cloudy")
-                            } else {
-                                setWeatherWallpaper(context, "sunny")
-                            }
-                            Utility.scheduleWalls(context, true)
-                            jobFinished(params, false)
-                        }
-                    }
+    fun setWeatherWallpaper(context: Context, params: JobParameters) {
 
-                    override fun onFailure(@NonNull call: Call<WeatherResponse>, @NonNull t: Throwable) {
-                        Log.e("APICall", t.toString())
-                        Utility.scheduleWalls(context, true)
-
-                        jobFinished(params, true)
-
-                    }
-                })
+        Utility.getLocation(context) {
+            if (it != null) {
+                Utility.getWeatherType(it?.latitude.toString(), it.longitude.toString()) {
+                    sharedPref.edit().putBoolean("static", false).commit()
+                    sharedPref.edit().putString("weatherType", it).commit()
+                    val intent = Intent("com.wydgettech.contextualwalls.CHANGEWALLPAPER")
+                    intent.putExtra("weather", it)
+                    this.sendBroadcast(intent)
+                    Utility.scheduleWalls(context, true)
+                    jobFinished(params, false)
+                }
             }
-            .addOnFailureListener {
-                Utility.scheduleWalls(context, true)
-                Toast.makeText(context, "Failed location gps", Toast.LENGTH_SHORT).show()
-            }
-
+        }
     }
 
 }
