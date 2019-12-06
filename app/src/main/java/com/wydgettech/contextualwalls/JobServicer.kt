@@ -81,11 +81,11 @@ class JobServicer : JobService() {
 
         Utility.getLocation(context) {
             if (it != null) {
-                Utility.getWeatherType(it?.latitude.toString(), it.longitude.toString()) {
+                Utility.getWeatherType(it?.latitude.toString(), it.longitude.toString()) { weather, temperature ->
                     sharedPref.edit().putBoolean("static", false).commit()
-                    sharedPref.edit().putString("weatherType", it).commit()
+                    sharedPref.edit().putString("weatherType", weather).commit()
                     val intent = Intent("com.wydgettech.contextualwalls.CHANGEWALLPAPER")
-                    intent.putExtra("weather", it)
+                    intent.putExtra("weather", weather)
                     this.sendBroadcast(intent)
                     Utility.scheduleWalls(context, true)
                     jobFinished(params, false)

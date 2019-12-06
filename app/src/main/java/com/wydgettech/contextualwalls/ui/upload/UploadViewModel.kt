@@ -53,7 +53,7 @@ class UploadViewModel : ViewModel() {
                 var city = Utility.gpsToCity(context, it!!.latitude, it!!.longitude)
                 var arr = hashMapOf(
                     "link" to link.toString(),
-                    "user" to FirebaseAuth.getInstance().currentUser.toString()
+                    "user" to FirebaseAuth.getInstance().currentUser!!.phoneNumber
                 )
                 db.collection(city).document(link.toString().takeLast(20))
                     .set(arr as Map<String, Any>)

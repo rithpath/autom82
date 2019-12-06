@@ -32,8 +32,8 @@ class Utility {
         fun scheduleWalls(context: Context, weather: Boolean) {
             val sharedPref: SharedPreferences = context.getSharedPreferences("ContextualWalls", 0)
             sharedPref.edit().putBoolean("weather", weather).apply()
-
-            Toast.makeText(context, "Rescheduling", Toast.LENGTH_SHORT).show()
+            Log.d("wallog", "sched")
+            Toast.makeText(context, "Rescheduled", Toast.LENGTH_SHORT).show()
             val serviceComponent = ComponentName(context!!, JobServicer::class.java)
             val builder = JobInfo.Builder(0, serviceComponent)
             builder.setOverrideDeadline((30 * 1000 * 1).toLong()) // For the demo
@@ -80,7 +80,7 @@ class Utility {
             return ((weather - 273.15) * 9 / 5) + 32
         }
 
-        fun getWeatherType(lat: String, lon: String, weatherCallback: (String?) -> Unit) {
+        fun getWeatherType(lat: String, lon: String, weatherCallback: (String?, Float?) -> Unit) {
             val retrofit = Retrofit.Builder()
                 .baseUrl("https://api.openweathermap.org/")
                 .addConverterFactory(GsonConverterFactory.create())
@@ -98,20 +98,20 @@ class Utility {
                             }
                         }
                         if (rain) {
-                            weatherCallback("rainy")
+                            weatherCallback("rainy", weatherResponse.main.temp)
                         } else if (weatherResponse.clouds.all != null && weatherResponse.clouds.all.compareTo(
                                 39
                             ) > 0
                         ) {
-                            weatherCallback("cloudy")
+                            weatherCallback("cloudy", weatherResponse.main.temp)
                         } else {
-                            weatherCallback("sunny")
+                            weatherCallback("sunny", weatherResponse.main.temp)
                         }
                     }
                 }
 
                 override fun onFailure(@NonNull call: Call<WeatherResponse>, @NonNull t: Throwable) {
-                    weatherCallback(null)
+                    weatherCallback(null, null)
                     Log.e("APICall", t.toString())
                 }
             })

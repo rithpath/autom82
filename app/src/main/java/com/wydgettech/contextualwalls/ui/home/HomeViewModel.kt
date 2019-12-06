@@ -29,9 +29,10 @@ class HomeViewModel : ViewModel() {
              if(it != null) {
                  locationText.value =
                      Utility.gpsToCity(context, it!!.latitude, it.longitude)
-                 Utility.getWeatherType(it.latitude.toString(), it.longitude.toString()) {
+                 Utility.getWeatherType(it.latitude.toString(), it.longitude.toString()) { wtr, tmp ->
                      if(it != null) {
-                         weather.value = it
+                         weather.value = wtr
+                         tempaerature.value = Utility.kelvinToFarenheit(tmp!!).toInt().toString() + " degrees Fahrenheit."
                      }
                  }
              }
